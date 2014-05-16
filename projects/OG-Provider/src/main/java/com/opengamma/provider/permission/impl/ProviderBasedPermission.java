@@ -6,11 +6,15 @@
 package com.opengamma.provider.permission.impl;
 
 import org.apache.shiro.authz.Permission;
+import org.apache.shiro.authz.UnauthenticatedException;
 
 import com.opengamma.core.user.UserPrincipals;
 import com.opengamma.provider.permission.PermissionCheckProvider;
+import com.opengamma.provider.permission.PermissionCheckProviderRequest;
+import com.opengamma.provider.permission.PermissionCheckProviderResult;
 import com.opengamma.util.ArgumentChecker;
 import com.opengamma.util.auth.AuthUtils;
+import com.opengamma.util.auth.ShiroPermission;
 
 /**
  * An Apache Shiro permission that uses a {@code PermissionCheckProvider}.
@@ -18,7 +22,7 @@ import com.opengamma.util.auth.AuthUtils;
  * This uses the underlying provider to check permissions.
  * See {@link ProviderBasedPermissionResolver} for public access.
  */
-final class ProviderBasedPermission implements Permission {
+final class ProviderBasedPermission implements ShiroPermission {
 
   /**
    * The underlying provider.
@@ -44,16 +48,33 @@ final class ProviderBasedPermission implements Permission {
   // this permission is the permission I have
   // the other permission is the permission being checked
   @Override
-  public boolean implies(Permission requestedPermission) {
-    if (requestedPermission instanceof ProviderBasedPermission == false) {
+  public boolean implies(Permission requiredPermission) {
+    if (requiredPermission instanceof ProviderBasedPermission == false) {
       return false;
     }
-    ProviderBasedPermission requestedPerm = (ProviderBasedPermission) requestedPermission;
+    ProviderBasedPermission requiredPerm = (ProviderBasedPermission) requiredPermission;
     UserPrincipals user = (UserPrincipals) AuthUtils.getSubject().getSession().getAttribute(UserPrincipals.ATTRIBUTE_KEY);
     if (user == null) {
       return false;
     }
-    return _provider.isPermitted(user.getAlternateIds(), user.getNetworkAddress(), requestedPerm._permissionString);
+    return _provider.isPermitted(user.getAlternateIds(), user.getNetworkAddress(), requiredPerm._permissionString);
+  }
+
+  @Override
+  public boolean checkImplies(Permission requiredPermission) {
+    if (requiredPermission instanceof ProviderBasedPermission == false) {
+      return false;
+    }
+    ProviderBasedPermission requiredPerm = (ProviderBasedPermission) requiredPermission;
+    UserPrincipals user = (UserPrincipals) AuthUtils.getSubject().getSession().getAttribute(UserPrincipals.ATTRIBUTE_KEY);
+    if (user == null) {
+      throw new UnauthenticatedException("Permission denied: User not logged in: " + requiredPermission);
+    }
+    PermissionCheckProviderRequest request = PermissionCheckProviderRequest.createGet(
+        user.getAlternateIds(), user.getNetworkAddress(), requiredPerm._permissionString);
+    PermissionCheckProviderResult result = _provider.isPermitted(request);
+    result.checkErrors();
+    return result.isPermitted(requiredPerm._permissionString);
   }
 
   //-------------------------------------------------------------------------

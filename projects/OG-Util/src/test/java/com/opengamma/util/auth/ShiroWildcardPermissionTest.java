@@ -5,6 +5,7 @@
  */
 package com.opengamma.util.auth;
 
+import static org.mockito.Mockito.mock;
 import static org.testng.AssertJUnit.assertEquals;
 
 import org.apache.shiro.authz.Permission;
@@ -167,8 +168,22 @@ public class ShiroWildcardPermissionTest {
   public void test_permissions(String perm1, String perm2, boolean impliesForward, boolean impliesBackward) {
     Permission sp1 = ShiroWildcardPermission.of(perm1);
     Permission sp2 = ShiroWildcardPermission.of(perm2);
-    assertEquals("Foward", impliesForward, sp1.implies(sp2));
+    assertEquals("Forward", impliesForward, sp1.implies(sp2));
     assertEquals("Backward", impliesBackward, sp2.implies(sp1));
+  }
+
+  @Test(dataProvider = "permissions")
+  public void test_permissionsChecked(String perm1, String perm2, boolean impliesForward, boolean impliesBackward) {
+    ShiroPermission sp1 = ShiroWildcardPermission.of(perm1);
+    ShiroPermission sp2 = ShiroWildcardPermission.of(perm2);
+    assertEquals("Forward", impliesForward, sp1.checkImplies(sp2));
+    assertEquals("Backward", impliesBackward, sp2.checkImplies(sp1));
+  }
+
+  public void test_permissionsChecked_otherType() {
+    ShiroPermission sp1 = ShiroWildcardPermission.of("a");
+    ShiroPermission sp2 = mock(ShiroPermission.class);
+    assertEquals("Forward", false, sp1.checkImplies(sp2));
   }
 
 }

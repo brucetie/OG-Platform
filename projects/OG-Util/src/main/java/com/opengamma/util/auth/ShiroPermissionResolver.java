@@ -5,8 +5,10 @@
  */
 package com.opengamma.util.auth;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -102,6 +104,24 @@ public final class ShiroPermissionResolver implements PermissionResolver {
       Throwables.propagateIfPossible(ex.getCause());
       throw ex;
     }
+  }
+
+  /**
+   * Resolves a set of permissions from string to object form.
+   * <p>
+   * The returned set of permissions may be smaller than the input set.
+   * 
+   * @param permissionStrings  the set of permission strings, not null
+   * @return the set of permission objects, not null
+   * @throws InvalidPermissionStringException if the permission string is invalid
+   */
+  public List<Permission> resolvePermissions(String... permissionStrings) {
+    ArgumentChecker.notNull(permissionStrings, "permissionStrings");
+    List<Permission> permissions = new ArrayList<>(permissionStrings.length);
+    for (String permissionString : permissionStrings) {
+      permissions.add(resolvePermission(permissionString));
+    }
+    return permissions;
   }
 
   /**

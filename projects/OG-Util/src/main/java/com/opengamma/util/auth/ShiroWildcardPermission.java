@@ -26,7 +26,7 @@ import com.google.common.collect.ImmutableSet;
  * This is a faster version of {@link WildcardPermission}.
  * See {@link ShiroPermissionResolver} for public access.
  */
-final class ShiroWildcardPermission implements Permission {
+final class ShiroWildcardPermission implements ShiroPermission {
 
   /**
    * The wildcard segment.
@@ -53,7 +53,7 @@ final class ShiroWildcardPermission implements Permission {
    * @return the permission object, not null
    * @throws InvalidPermissionStringException if the permission string is invalid
    */
-  static Permission of(String permissionString) {
+  static ShiroPermission of(String permissionString) {
     return new ShiroWildcardPermission(permissionString);
   }
 
@@ -123,13 +123,13 @@ final class ShiroWildcardPermission implements Permission {
   // this permission is the permission I have
   // the other permission is the permission being checked
   @Override
-  public boolean implies(Permission permission) {
-    if (permission instanceof ShiroWildcardPermission == false) {
+  public boolean implies(Permission requiredPermission) {
+    if (requiredPermission instanceof ShiroWildcardPermission == false) {
       return false;
     }
-    ShiroWildcardPermission perm = (ShiroWildcardPermission) permission;
+    ShiroWildcardPermission requiredPerm = (ShiroWildcardPermission) requiredPermission;
     List<Set<String>> thisSegments = _segments;
-    List<Set<String>> otherSegments = perm._segments;
+    List<Set<String>> otherSegments = requiredPerm._segments;
     if (thisSegments.size() > otherSegments.size()) {
       return false;
     }
@@ -142,6 +142,11 @@ final class ShiroWildcardPermission implements Permission {
       }
     }
     return true;
+  }
+
+  @Override
+  public boolean checkImplies(Permission requiredPermission) {
+    return implies(requiredPermission);
   }
 
   //-------------------------------------------------------------------------
